@@ -96,16 +96,16 @@ Userspace can read telemetry or push rule updates directly via `bpf_map_update_e
 ## Fragmentation Evasion Simulation
 
 ### Scapy Packet Generation
-![Scapy Output](assets/scapy_simulation_output.png)
+![Scapy Output](assets/fragment-scapy-output.png)
 
 ### Fragmented Packets (Wireshark)
-![Fragments](assets/fragmented_packets_wireshark.png)
+![Fragments](assets/fragment-scapy-wireshark.jpg)
 
 ### Fragment Offset & MF Flag
-![Offset](assets/ip_fragment_offset.png)
+![Offset](assets/fragment-offset-mf-flag.png)
 
 ### Packet Reassembly
-![Reassembly](assets/packet_reassembly.png)
+![Reassembly](assets/fragment-reassembly.png)
 
 ---
 

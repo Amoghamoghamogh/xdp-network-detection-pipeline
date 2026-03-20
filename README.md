@@ -124,6 +124,14 @@ All counters are readable from userspace without reloading the program:
 
 ---
 
+## Validation
+
+- Generated fragmented packets using Scapy
+- Observed fragmentation behavior (MF flag, offsets) in Wireshark
+- Verified packet handling at XDP layer before kernel processing
+
+---
+
 ## Constraints
 
 - BPF verifier limits loop depth — complex stateful logic belongs in userspace

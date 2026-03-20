@@ -1,40 +1,62 @@
 # XDP-Based Network Detection Pipeline
 
-## Overview
+> Kernel-level packet inspection using XDP/eBPF for early-stage filtering and TCP fingerprint-based detection at line rate.
 
-This project implements a high-performance network packet processing pipeline using eBPF/XDP for early-stage threat detection and traffic filtering.
-
-The system performs packet inspection at the XDP hook (pre-SKB allocation), enabling low-latency filtering before packets enter the kernel networking stack.
+Processes packets before SKB allocation to reduce kernel overhead and enable high-performance traffic filtering.
 
 ---
 
 ## Architecture
 
 ```
-Incoming Traffic
-        ↓
-[XDP Layer]
-- Firewall (IP filtering)
-- Port-based filtering
-- TCP fingerprinting
-- Latency tracking
-        ↓
-Decision Engine
-├── DROP → malicious traffic
-├── PASS → kernel (Suricata / normal processing)
-└── REDIRECT → AF_XDP (custom analysis)
+NIC
+↓
+[XDP Layer - eBPF]
+Packet parsing (Ethernet/IP/TCP/UDP)
+IP-based firewall (LPM trie)
+Port-based filtering
+TCP SYN fingerprinting (JA4T-style)
+TCP handshake latency tracking (JA4L-inspired)
+↓
+Decision
+├── DROP → malicious traffic (XDP_DROP)
+└── PASS → forwarded to kernel / IDS (Suricata)
 ```
 
 ---
 
 ## Key Features
 
-* High-speed packet parsing at XDP layer
-* IPv4 and IPv6 support
-* TCP SYN fingerprinting (JA4T-style)
-* Port-based filtering and IP banning
-* Connection latency tracking (JA4L concept)
-* Modular pipeline design
+- XDP-based packet processing (pre-SKB)
+- IPv4/IPv6 support
+- LPM-based IP blocking
+- TCP SYN fingerprinting (JA4T-style)
+- TCP handshake latency tracking
+- BPF map-based telemetry
+
+---
+
+## Performance
+
+- ~10,000+ packets/sec (Scapy simulation)
+- Sub-millisecond filtering at XDP layer
+- No SKB allocation (zero-copy processing)
+
+---
+
+## Fragmented Packet Simulation
+
+### Scapy Packet Generation
+![Scapy Output](Results/2.png)
+
+### Wireshark Fragmented Packets
+![Wireshark Fragments](Results/1.jpg)
+
+### Fragment Offset & MF Flag
+![Fragment Offset](Results/4.png)
+
+### Packet Reassembly View
+![Reassembly](Results/3.png)
 
 ---
 
@@ -130,68 +152,6 @@ bpf_map_update_elem(&blocked_tcp_fingerprints, ...);
 
 ---
 
-## libpcap-Based Traffic Analysis
-
-To complement XDP and AF_XDP processing, traffic analysis is performed using libpcap-based tools.
-
-### Capabilities
-
-* Capture live network traffic and PCAP files
-* Analyze packet headers and flows
-* Detect:
-
-  * Port scanning behavior
-  * SYN flood patterns
-  * Suspicious connection attempts
-
-### Example Workflow
-
-```
-Scapy → Generate traffic  
-↓  
-libpcap → Capture & analyze packets  
-↓  
-Extract patterns / anomalies  
-```
-
-This provides an additional validation layer and supports offline forensic analysis.
-
----
-
-## Threat Intelligence Integration
-
-### MITRE ATT&CK Mapping
-
-Observed behaviors are mapped to MITRE ATT&CK techniques for structured threat analysis:
-
-* **T1046 – Network Service Scanning**
-  → Multiple SYN packets across ports
-
-* **T1498 – Network Denial of Service**
-  → High-rate SYN flood patterns
-
-* **T1562 – Impair Defenses (Evasion)**
-  → Fragmentation-based evasion techniques
-
----
-
-### Indicators of Compromise (IoCs)
-
-The system extracts and tracks IoCs from analyzed traffic:
-
-* Malicious source IP addresses
-* Suspicious TCP fingerprints
-* Abnormal port usage patterns
-* Repeated anomalous connection attempts
-
-These IoCs are stored in BPF maps and used for:
-
-* Real-time blocking at XDP
-* Future traffic correlation
-* Threat intelligence enrichment
-
----
-
 ## Why XDP?
 
 * Runs before SKB allocation → reduces kernel overhead
@@ -209,6 +169,14 @@ Traffic simulation and validation were performed using Scapy, Wireshark, and lib
 * TCP behavior inspection
 * Detection of anomalous patterns
 
+
+---
+
+## Use Cases
+
+- DDoS mitigation (early drop at XDP)
+- IDS offloading (Suricata integration)
+- Edge security (load balancers / cloud)
 
 ---
 

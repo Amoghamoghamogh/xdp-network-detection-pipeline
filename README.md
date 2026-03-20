@@ -10,16 +10,12 @@ no iptables, no conntrack.
 
 Attaches to a NIC's XDP hook and runs a staged pipeline on every inbound packet:
 
-1. LPM-trie IP ban check (CIDR support, IPv4 + IPv6)
-2. Per-(IP, port) inbound/outbound port ban check
-3. JA4T-style TCP SYN fingerprinting — blocks known-bad stacks at wire speed
-4. JA4L-inspired handshake RTT measurement — feeds latency telemetry to userspace
+- LPM-trie IP ban check (CIDR support, IPv4 + IPv6)
+- Per-(IP, port) inbound/outbound port filtering
+- TCP SYN fingerprinting (JA4T-style)
+- TCP handshake latency tracking (JA4L-inspired)
 
-Packets that pass all stages are forwarded to the kernel. Everything else is
-dropped at `XDP_DROP` before an SKB is ever allocated.
-
-<!-- SUGGESTED IMAGE: place a single pipeline flow diagram here (assets/pipeline.svg)
-     showing NIC → XDP stages → XDP_DROP / XDP_PASS → kernel/Suricata -->
+Packets that fail any stage are dropped at **XDP_DROP (pre-SKB)**.
 
 ---
 
@@ -94,6 +90,22 @@ Userspace can read telemetry or push rule updates directly via `bpf_map_update_e
 
 <!-- SUGGESTED IMAGE: place a screenshot of bpftool map dump output here
      (assets/bpftool-maps-example.png) showing live telemetry from a running instance -->
+
+---
+
+## Fragmentation Evasion Simulation
+
+### Scapy Packet Generation
+![Scapy Output](assets/scapy_simulation_output.png)
+
+### Fragmented Packets (Wireshark)
+![Fragments](assets/fragmented_packets_wireshark.png)
+
+### Fragment Offset & MF Flag
+![Offset](assets/ip_fragment_offset.png)
+
+### Packet Reassembly
+![Reassembly](assets/packet_reassembly.png)
 
 ---
 
